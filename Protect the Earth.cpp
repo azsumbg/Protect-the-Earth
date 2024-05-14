@@ -40,6 +40,15 @@
 #define no_record 2002
 #define first_record 2003
 
+#define keyW 0x57
+#define keyX 0x58
+#define keyA 0x41
+#define keyD 0x44
+#define keyQ 0x51
+#define keyE 0x45
+#define keyC 0x43
+#define keyZ 0x5A
+
 WNDCLASS bWin = { 0 };
 HINSTANCE bIns = nullptr;
 HICON mainIcon = nullptr;
@@ -133,6 +142,8 @@ struct BULLETS
 };
 
 space::Person Hero = nullptr;
+dirs hero_prev_dir = dirs::right;
+
 std::vector<space::Person> vEvils;
 std::vector<BULLETS> vMyBullets;
 std::vector<BULLETS>vEnemyBullets;
@@ -447,6 +458,47 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
         }
         break;
 
+    case WM_KEYDOWN:
+        if (!Hero)break;
+        hero_prev_dir = Hero->dir;
+        switch (wParam)
+        {
+        case keyW:
+            Hero->dir = dirs::up;
+            break;
+
+        case keyX:
+            Hero->dir = dirs::down;
+            break;
+
+        case keyA:
+            Hero->dir = dirs::left;
+            break;
+
+        case keyD:
+            Hero->dir = dirs::right;
+            break;
+
+        case keyQ:
+            Hero->dir = dirs::u_l;
+            break;
+
+        case keyE:
+            Hero->dir = dirs::u_r;
+            break;
+
+        case keyZ:
+            Hero->dir = dirs::d_l;
+            break;
+
+        case keyC:
+            Hero->dir = dirs::d_r;
+            break;
+
+        default:Hero->dir = dirs::stop;
+
+        }
+        break;
 
 
     default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
@@ -814,6 +866,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
         ///////////////////////////////////
 
+        //HERO ENGINE *********************
+
+        if (Hero)
+            if (Hero->dir != dirs::stop)Hero->Move(speed);
 
 
 
@@ -894,7 +950,44 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 break;
 
             case dirs::u_l:
-                Draw->DrawBitmap(bmpHeroDL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                Draw->DrawBitmap(bmpHeroUL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::stop:
+                switch (hero_prev_dir)
+                {
+                case dirs::down:
+                    Draw->DrawBitmap(bmpHeroD, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::up:
+                    Draw->DrawBitmap(bmpHeroU, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::left:
+                    Draw->DrawBitmap(bmpHeroL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::right:
+                    Draw->DrawBitmap(bmpHeroR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::d_r:
+                    Draw->DrawBitmap(bmpHeroDR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::d_l:
+                    Draw->DrawBitmap(bmpHeroDL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::u_r:
+                    Draw->DrawBitmap(bmpHeroUR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+
+                case dirs::u_l:
+                    Draw->DrawBitmap(bmpHeroUL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                    break;
+                }
                 break;
             }
         }
