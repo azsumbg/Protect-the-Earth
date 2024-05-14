@@ -61,9 +61,9 @@ D2D1_RECT_F b1R = { 0, 0, scr_width / 3 - 50.0f, 50.0f };
 D2D1_RECT_F b2R = { scr_width / 3, 0, scr_width / 3 + scr_width / 3 - 50.0f, 50.0f };
 D2D1_RECT_F b3R = { scr_width - scr_width / 3, 0, scr_width, 50.0f };
 
-D2D1_RECT_F Txtb1R = { 10.0f, 5.0f, scr_width / 3 - 50.0f, 50.0f };
-D2D1_RECT_F Txtb2R = { scr_width / 3 + 10.0f, 5.0f, scr_width / 3 + scr_width / 3 - 50.0f, 50.0f };
-D2D1_RECT_F Txtb3R = { scr_width - scr_width / 3 + 10.0f, 5.0f, scr_width, 50.0f };
+D2D1_RECT_F Txtb1R = { 10.0f, 5.0f, scr_width / 3 - 60.0f, 50.0f };
+D2D1_RECT_F Txtb2R = { scr_width / 3 + 10.0f, 5.0f, scr_width / 3 + scr_width / 3 - 60.0f, 50.0f };
+D2D1_RECT_F Txtb3R = { scr_width - scr_width / 3 + 10.0f, 5.0f, scr_width - 10.0f, 50.0f };
 
 bool pause = false;
 bool sound = true;
@@ -228,7 +228,7 @@ void InitGame()
     vStars.clear();
     //////////////////////////////////////////////////////
 
-    Hero = space::iCreatePerson(types::hero, 50.0f, scr_width - 150.0f);
+    Hero = space::iCreatePerson(types::hero, 50.0f, scr_height - 150.0f);
     if (Hero)Hero->dir = dirs::right;
 
 }
@@ -343,7 +343,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             }
             if (cur_pos.y <= 50)
             {
-                if (cur_pos.x >= b1R.left && cur_pos.x <= b1R.right)
+                if (cur_pos.x >= Txtb1R.left && cur_pos.x <= Txtb1R.right)
                 {
                     if (!b1Hglt)
                     {
@@ -356,7 +356,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                         b3Hglt = false;
                     }
                 }
-                if (cur_pos.x >= b2R.left && cur_pos.x <= b2R.right)
+                if (cur_pos.x >= Txtb2R.left && cur_pos.x <= Txtb2R.right)
                 {
                     if (!b2Hglt)
                     {
@@ -369,7 +369,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                         b3Hglt = false;
                     }
                 }
-                if (cur_pos.x >= b3R.left && cur_pos.x <= b3R.right)
+                if (cur_pos.x >= Txtb3R.left && cur_pos.x <= Txtb3R.right)
                 {
                     if (!b3Hglt)
                     {
@@ -706,7 +706,7 @@ void CreateResources()
     }
     ////////////////////////////////////////////////////////////
 
-    D2D1_RECT_F up_txtR = { 0, -250.0f , 800.0f, 50.0f };
+    D2D1_RECT_F up_txtR = { 0, -150.0f , 800.0f, 50.0f };
     D2D1_RECT_F down_txtR = { scr_width, scr_height, scr_width + 400.0f, scr_height + 250.0f };
 
     mciSendString(L"play .\\res\\snd\\intro.wav", NULL, NULL, NULL);
@@ -762,8 +762,8 @@ void CreateResources()
     {
         int choice = rand() % 3;
 
-        next_x += 10.0f + (float)(rand() % 100);
-        next_y += 15.0f + (float)(rand() % 100);
+        next_x += 10.0f + (float)(rand() % 40);
+        next_y += 15.0f + (float)(rand() % 60);
         if (next_x > scr_width - 20.0f) next_x = 20.0f + (float)(rand() % 20);
         if (next_y > 650.0f) next_y = 55.0f + (float)(rand() % 20);
 
@@ -856,6 +856,46 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         star->GetWidth(), star->GetHeight()), Star3Brush);
                     break;
                 }
+            }
+        }
+
+        //HERO ******************************
+
+        if (Hero)
+        {
+            switch (Hero->dir)
+            {
+            case dirs::down:
+                Draw->DrawBitmap(bmpHeroD, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::up:
+                Draw->DrawBitmap(bmpHeroU, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::left:
+                Draw->DrawBitmap(bmpHeroL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::right:
+                Draw->DrawBitmap(bmpHeroR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::d_r:
+                Draw->DrawBitmap(bmpHeroDR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::d_l:
+                Draw->DrawBitmap(bmpHeroDL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::u_r:
+                Draw->DrawBitmap(bmpHeroUR, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
+
+            case dirs::u_l:
+                Draw->DrawBitmap(bmpHeroDL, D2D1::RectF(Hero->x, Hero->y, Hero->ex, Hero->ey));
+                break;
             }
         }
 
