@@ -871,6 +871,107 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         if (Hero)
             if (Hero->dir != dirs::stop)Hero->Move(speed);
 
+        //ENEMIES ENGINE ********************************
+
+        if (rand() % (200 - 10 * (int)(speed)) == 0)
+        {
+            int edir = rand() % 8;
+            int etype = rand() % 3 + 2;
+            switch (edir)
+            {
+            case 0:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), -50.0f, 0));
+                vEvils.back()->dir = dirs::d_r;
+                break;
+
+            case 1:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), 
+                    (float)(rand() % ((int)(scr_width - 100)) + 100), 0));
+                vEvils.back()->dir = dirs::down;
+                break;
+
+            case 2:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), scr_width, 0));
+                vEvils.back()->dir = dirs::d_l;
+                break;
+
+            case 3:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), -50.0f, scr_height));
+                vEvils.back()->dir = dirs::u_r;
+                break;
+
+            case 4:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), (float)(rand() % ((int)(scr_width - 100)) + 100), 
+                    scr_height));
+                vEvils.back()->dir = dirs::up;
+                break;
+
+            case 5:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), scr_width, scr_height));
+                vEvils.back()->dir = dirs::u_l;
+                break;
+
+            case 6:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), 0, (float)(rand() % ((int)(scr_height - 200)) + 50)));
+                vEvils.back()->dir = dirs::right;
+                break;
+
+            case 7:
+                vEvils.push_back(space::iCreatePerson(static_cast<types>(etype), scr_width, 
+                    (float)(rand() % ((int)(scr_height - 200)) + 50)));
+                vEvils.back()->dir = dirs::left;
+                break;
+
+
+            }
+        }
+
+        if (!vEvils.empty())
+        {
+            for (std::vector<space::Person>::iterator ship = vEvils.begin(); ship < vEvils.end(); ship++)
+            {
+                if ((*ship)->Move(speed) == DLL_FAIL)
+                {
+                    switch ((*ship)->dir)
+                    {
+                    case dirs::up:
+                        (*ship)->dir = dirs::down;
+                        break;
+
+                    case dirs::down:
+                        (*ship)->dir = dirs::up;
+                        break;
+
+                    case dirs::left:
+                        (*ship)->dir = dirs::right;
+                        break;
+
+                    case dirs::right:
+                        (*ship)->dir = dirs::left;
+                        break;
+
+                    case dirs::u_r:
+                        (*ship)->dir = dirs::d_l;
+                        break;
+
+                    case dirs::u_l:
+                        (*ship)->dir = dirs::d_r;
+                        break;
+
+                    case dirs::d_r:
+                        (*ship)->dir = dirs::u_l;
+                        break;
+
+                    case dirs::d_l:
+                        (*ship)->dir = dirs::u_r;
+                        break;
+                    }
+                }
+            }
+        }
+
+
+
 
 
         //DRAW THINGS **********************
@@ -992,6 +1093,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
+
+        //ENEMIES ***************************
+
+        if (!vEvils.empty())
+        {
+            for (std::vector<space::Person>::iterator it = vEvils.begin(); it < vEvils.end(); ++it)
+            {
+                switch ((*it)->type)
+                {
+                case types::evil1:
+                    Draw->DrawBitmap(bmpEvil1, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
+
+                case types::evil2:
+                    Draw->DrawBitmap(bmpEvil2, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
+
+                case types::evil3:
+                    Draw->DrawBitmap(bmpEvil3, D2D1::RectF((*it)->x, (*it)->y, (*it)->ex, (*it)->ey));
+                    break;
+                }
+            }
+        }
 
         ////////////////////////////////////
 
