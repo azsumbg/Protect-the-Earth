@@ -926,47 +926,71 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
-        if (!vEvils.empty())
+        if (!vEvils.empty() && Hero)
         {
             for (std::vector<space::Person>::iterator ship = vEvils.begin(); ship < vEvils.end(); ship++)
             {
-                if ((*ship)->Move(speed) == DLL_FAIL)
+                AI_Input.enemy_x = Hero->x;
+                AI_Input.enemy_y = Hero->y;
+                AI_Input.enemy_ex = Hero->ex;
+                AI_Input.enemy_ey = Hero->ey;
+                AI_Input.my_x = (*ship)->x;
+                AI_Input.my_y = (*ship)->y;
+                AI_Input.my_ex = (*ship)->ex;
+                AI_Input.my_ey = (*ship)->ey;
+                if (((Hero->x >= (*ship)->x - 50.0f && Hero->x <= (*ship)->ex + 50.0f) ||
+                    (Hero->ex >= (*ship)->x - 50.0f && Hero->ex <= (*ship)->ex + 50.0f))
+                    && ((Hero->y >= (*ship)->y - 50.0f && Hero->y <= (*ship)->ey + 50.0f) ||
+                        (Hero->ey >= (*ship)->y - 50.0f && Hero->ey <= (*ship)->ey + 50.0f)))
+                    AI_Input.enemy_in_range = true;
+                else AI_Input.enemy_in_range = false;
+
+                AI_Output = space::AIToDo(AI_Input);
+                if (AI_Output.new_action == choices::shoot)
                 {
-                    switch ((*ship)->dir)
-                    {
-                    case dirs::up:
-                        (*ship)->dir = dirs::down;
-                        break;
-
-                    case dirs::down:
-                        (*ship)->dir = dirs::up;
-                        break;
-
-                    case dirs::left:
-                        (*ship)->dir = dirs::right;
-                        break;
-
-                    case dirs::right:
-                        (*ship)->dir = dirs::left;
-                        break;
-
-                    case dirs::u_r:
-                        (*ship)->dir = dirs::d_l;
-                        break;
-
-                    case dirs::u_l:
-                        (*ship)->dir = dirs::d_r;
-                        break;
-
-                    case dirs::d_r:
-                        (*ship)->dir = dirs::u_l;
-                        break;
-
-                    case dirs::d_l:
-                        (*ship)->dir = dirs::u_r;
-                        break;
-                    }
+                    (*ship)->Shoot();
+                    (*ship)->dir = dirs::stop;
                 }
+                else if (AI_Output.new_action == choices::move) (*ship)->dir = AI_Output.new_dir;
+                    
+                if((*ship)->dir!=dirs::stop)
+                    if ((*ship)->Move(speed) == DLL_FAIL)
+                    {
+                        switch ((*ship)->dir)
+                        {
+                        case dirs::up:
+                            (*ship)->dir = dirs::down;
+                            break;
+
+                        case dirs::down:
+                            (*ship)->dir = dirs::up;
+                            break;
+
+                        case dirs::left:
+                            (*ship)->dir = dirs::right;
+                            break;
+
+                        case dirs::right:
+                            (*ship)->dir = dirs::left;
+                            break;
+
+                        case dirs::u_r:
+                            (*ship)->dir = dirs::d_l;
+                            break;
+
+                        case dirs::u_l:
+                            (*ship)->dir = dirs::d_r;
+                            break;
+
+                        case dirs::d_r:
+                            (*ship)->dir = dirs::u_l;
+                            break;
+
+                        case dirs::d_l:
+                            (*ship)->dir = dirs::u_r;
+                            break;
+                        }
+                    }
             }
         }
 
