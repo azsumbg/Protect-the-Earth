@@ -502,7 +502,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             if (Hero)
             {
                 space::LINEDATA bul_path;
-               
+
                 switch (Hero->dir)
                 {
                 case dirs::up:
@@ -512,20 +512,20 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                     break;
 
                 case dirs::down:
-                    bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->ey, Hero->x + Hero->GetWidth() / 2, 
+                    bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->ey, Hero->x + Hero->GetWidth() / 2,
                         scr_height);
-                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2, 
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2,
                         Hero->y, 7.0f, 16.0f),bul_path,dirs::down });
                     break;
 
                 case dirs::left:
                     bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 4, 0, Hero->y + Hero->GetHeight() / 4);
-                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4, 
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4,
                         8.0f, 15.0f),bul_path,dirs::left });
                     break;
 
                 case dirs::right:
-                    bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, scr_width, 
+                    bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, scr_width,
                         Hero->y + Hero->GetHeight() / 4);
                     vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 4,
                         8.0f, 15.0f), bul_path, dirs::right });
@@ -621,8 +621,9 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             }
             break;
 
+            
         default:Hero->dir = dirs::stop;
-                    }
+        }
         break;
 
 
@@ -1123,17 +1124,45 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 AI_Input.my_y = (*ship)->y;
                 AI_Input.my_ex = (*ship)->ex;
                 AI_Input.my_ey = (*ship)->ey;
-                if (((Hero->x >= (*ship)->x - 50.0f && Hero->x <= (*ship)->ex + 50.0f) ||
-                    (Hero->ex >= (*ship)->x - 50.0f && Hero->ex <= (*ship)->ex + 50.0f))
-                    && ((Hero->y >= (*ship)->y - 50.0f && Hero->y <= (*ship)->ey + 50.0f) ||
-                        (Hero->ey >= (*ship)->y - 50.0f && Hero->ey <= (*ship)->ey + 50.0f)))
+                if (((Hero->x >= (*ship)->x - 100.0f && Hero->x <= (*ship)->ex + 100.0f) ||
+                    (Hero->ex >= (*ship)->x - 100.0f && Hero->ex <= (*ship)->ex + 100.0f))
+                    && ((Hero->y >= (*ship)->y - 100.0f && Hero->y <= (*ship)->ey + 100.0f) ||
+                        (Hero->ey >= (*ship)->y - 100.0f && Hero->ey <= (*ship)->ey + 100.0f)))
                     AI_Input.enemy_in_range = true;
                 else AI_Input.enemy_in_range = false;
 
                 AI_Output = space::AIToDo(AI_Input);
                 if (AI_Output.new_action == choices::shoot)
                 {
-                    (*ship)->Shoot();
+                    if ((*ship)->Shoot() && Hero)
+                    {
+                        space::LINEDATA aLine = space::InitLineData((*ship)->x, (*ship)->y, Hero->ex, Hero->y);
+                        if (Hero->y < (*ship)->y)
+                        {
+                            if (Hero->ex < (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->y,
+                                15.0f,15.0f),aLine,dirs::u_l });
+                            else if (Hero->ex == (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->y,
+                                15.0f,15.0f),aLine,dirs::up });
+                            else if (Hero->ex > (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->y,
+                                15.0f,15.0f),aLine,dirs::u_r });
+                        }
+                        else if (Hero->y > (*ship)->y)
+                        {
+                            if (Hero->ex < (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->ey,
+                                15.0f,15.0f),aLine,dirs::d_l });
+                            else if (Hero->ex == (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->ey,
+                                15.0f,15.0f),aLine,dirs::down });
+                            else if (Hero->ex > (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->ey,
+                                15.0f,15.0f),aLine,dirs::d_r });
+                        }
+                        else if (Hero->y == (*ship)->y)
+                        {
+                            if (Hero->ex < (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->x,(*ship)->y,
+                                15.0f,15.0f),aLine,dirs::left });
+                            else if (Hero->ex > (*ship)->x)vEnemyBullets.push_back(BULLETS{ space::OBJECT((*ship)->ex,(*ship)->y,
+                                15.0f,15.0f),aLine,dirs::right });
+                        }
+                    }
                     (*ship)->dir = dirs::stop;
                 }
                 else if (AI_Output.new_action == choices::move) (*ship)->dir = AI_Output.new_dir;
@@ -1179,8 +1208,65 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
+        if (!vEnemyBullets.empty())
+        {
+            for (std::vector<BULLETS>::iterator bul = vEnemyBullets.begin(); bul < vEnemyBullets.end(); bul++)
+            {
+                switch (bul->dir)
+                {
+                case dirs::up:
+                    bul->Dims.y -= 5.0f + speed;
+                    bul->Dims.SetEdges();
+                    break;
 
+                case dirs::down:
+                    bul->Dims.y += 5.0f + speed;
+                    bul->Dims.SetEdges();
+                    break;
 
+                case dirs::left:
+                    bul->Dims.x -= 5.0f + speed;
+                    bul->Dims.SetEdges();
+                    break;
+
+                case dirs::right:
+                    bul->Dims.x += 5.0f + speed;
+                    bul->Dims.SetEdges();
+                    break;
+
+                case dirs::u_r:
+                    bul->Dims.x += 5.0f + speed;
+                    bul->Dims.y = space::NextLineY(bul->Dims.x, bul->path);
+                    bul->Dims.SetEdges();
+                    break;
+
+                case dirs::u_l:
+                    bul->Dims.x -= 5.0f + speed;
+                    bul->Dims.y = space::NextLineY(bul->Dims.x, bul->path);
+                    bul->Dims.SetEdges();
+                    break;
+
+                case dirs::d_r:
+                    bul->Dims.x += 5.0f + speed;
+                    bul->Dims.y = space::NextLineY(bul->Dims.x, bul->path);
+                    bul->Dims.SetEdges();
+                    break;
+
+                case dirs::d_l:
+                    bul->Dims.x -= 5.0f + speed;
+                    bul->Dims.y = space::NextLineY(bul->Dims.x, bul->path);
+                    bul->Dims.SetEdges();
+                    break;
+                }
+
+                if (bul->Dims.x >= scr_width || bul->Dims.ex <= 0 || bul->Dims.y >= scr_height || bul->Dims.ey <= 50.0f)
+                {
+                    vEnemyBullets.erase(bul);
+                    break;
+                }
+
+            }
+        }
 
 
         //DRAW THINGS **********************
@@ -1365,6 +1451,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 }
             }
         }
+
+        if (!vEnemyBullets.empty())
+            for (int i = 0; i < vEnemyBullets.size(); i++)
+                Draw->DrawBitmap(bmpEvilBul, D2D1::RectF(vEnemyBullets[i].Dims.x, vEnemyBullets[i].Dims.y,
+                    vEnemyBullets[i].Dims.ex, vEnemyBullets[i].Dims.ey));
 
         ////////////////////////////////////
 
