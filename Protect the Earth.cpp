@@ -463,7 +463,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 
     case WM_KEYDOWN:
         if (!Hero)break;
-        hero_prev_dir = Hero->dir;
+        if (Hero->dir != dirs::stop)hero_prev_dir = Hero->dir;
         switch (wParam)
         {
         case keyW:
@@ -618,13 +618,11 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                     }
                     break;
                 }
-
             }
             break;
 
         default:Hero->dir = dirs::stop;
-
-        }
+                    }
         break;
 
 
