@@ -134,6 +134,7 @@ ID2D1Bitmap* bmpEvil2 = nullptr;
 ID2D1Bitmap* bmpEvil3 = nullptr;
 
 ID2D1Bitmap* bmpEvilBul = nullptr;
+ID2D1Bitmap* bmpExplosion[23] = { nullptr };
 
 //////////////////////////////////////////
 
@@ -142,6 +143,11 @@ struct BULLETS
     space::OBJECT Dims;
     space::LINEDATA path;
     dirs dir=dirs::stop;
+};
+struct EXPLOSION
+{
+    space::OBJECT Dims;
+    int frame = 0;
 };
 
 space::Person Hero = nullptr;
@@ -152,6 +158,7 @@ std::vector<BULLETS> vMyBullets;
 std::vector<BULLETS>vEnemyBullets;
 
 std::vector<space::OBJECT> vStars;
+std::vector<EXPLOSION>vExplosions;
 
 space::LINEDATA OneLine;
 space::AIDATA AI_Input;
@@ -213,6 +220,7 @@ void ClearResources()
     Swipe(&bmpEvil2);
     Swipe(&bmpEvil3);
     Swipe(&bmpEvilBul);
+    for (int i = 0; i < 23; i++)Swipe(&bmpExplosion[i]);
 }
 void ErrExit(int what)
 {
@@ -240,6 +248,7 @@ void InitGame()
     vMyBullets.clear();
     vEnemyBullets.clear();
     vStars.clear();
+    vExplosions.clear();
     //////////////////////////////////////////////////////
 
     Hero = space::iCreatePerson(types::hero, 50.0f, scr_height - 150.0f);
@@ -882,6 +891,25 @@ void CreateResources()
         LogError(L"Error loading bmpEvilBul");
         ErrExit(eD2D);
     }
+    
+    for (int i = 0; i < 23; i++)
+    {
+        wchar_t name[100] = L".\\res\\img\\explosion\\";
+        wchar_t add[5] = L"\0";
+
+        wsprintf(add, L"%d", i);
+        wcscat_s(name, add);
+        wcscat_s(name, L".png");
+
+        bmpExplosion[i] = Load(name, Draw);
+
+        if (!bmpExplosion[i])
+        {
+            LogError(L"Error loading bmpExplosion");
+            ErrExit(eD2D);
+        }
+    }
+    
     ////////////////////////////////////////////////////////////
 
     D2D1_RECT_F up_txtR = { 0, -150.0f , 800.0f, 50.0f };
@@ -1054,6 +1082,33 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     vMyBullets.erase(bullet);
                     break;
                 }
+            }
+        }
+
+        if (!vMyBullets.empty() && !vEvils.empty())
+        {
+            for (std::vector<space::Person>::iterator ship = vEvils.begin(); ship < vEvils.end(); ship++)
+            {
+                bool killed = false;
+                for (std::vector<BULLETS>::iterator bullet = vMyBullets.begin(); bullet < vMyBullets.end(); bullet++)
+                {
+                    if (!((*ship)->x > bullet->Dims.ex || (*ship)->ex<bullet->Dims.x ||
+                        (*ship)->y>bullet->Dims.ey || (*ship)->ey < bullet->Dims.y))
+                    {
+                        vMyBullets.erase(bullet);
+                        (*ship)->lifes -= 30;
+                        if ((*ship)->lifes <= 0)
+                        {
+                            vExplosions.push_back(EXPLOSION{ space::OBJECT((*ship)->x - 20.0f,(*ship)->y - 20.0f,100.0,114.0f) });
+                            score += (int)(10 * speed);
+                            (*ship)->Release();
+                            vEvils.erase(ship);
+                            killed = true;
+                        }
+                        break;
+                    }
+                }
+                if (killed)break;
             }
         }
         
@@ -1456,6 +1511,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             for (int i = 0; i < vEnemyBullets.size(); i++)
                 Draw->DrawBitmap(bmpEvilBul, D2D1::RectF(vEnemyBullets[i].Dims.x, vEnemyBullets[i].Dims.y,
                     vEnemyBullets[i].Dims.ex, vEnemyBullets[i].Dims.ey));
+        
+        //EXPLOSIONS ************************
+
+        if (!vExplosions.empty())
+        {
+            for (std::vector<EXPLOSION>::iterator expl = vExplosions.begin(); expl < vExplosions.end(); expl++)
+            {
+                Draw->DrawBitmap(bmpExplosion[expl->frame], D2D1::RectF(expl->Dims.x, expl->Dims.y, expl->Dims.ex, expl->Dims.ey));
+                expl->frame++;
+                if (expl->frame >= 23)
+                {
+                    vExplosions.erase(expl);
+                    break;
+                }
+            }
+        }
+
+
 
         ////////////////////////////////////
 
