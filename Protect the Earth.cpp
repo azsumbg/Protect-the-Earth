@@ -49,6 +49,8 @@
 #define keyC 0x43
 #define keyZ 0x5A
 
+#define keyS 0x53
+
 WNDCLASS bWin = { 0 };
 HINSTANCE bIns = nullptr;
 HICON mainIcon = nullptr;
@@ -138,7 +140,8 @@ ID2D1Bitmap* bmpEvilBul = nullptr;
 struct BULLETS
 {
     space::OBJECT Dims;
-    dirs dir;
+    space::LINEDATA path;
+    dirs dir=dirs::stop;
 };
 
 space::Person Hero = nullptr;
@@ -493,6 +496,130 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 
         case keyC:
             Hero->dir = dirs::d_r;
+            break;
+
+        case keyS:
+            if (Hero)
+            {
+                space::LINEDATA bul_path;
+               
+                switch (Hero->dir)
+                {
+                case dirs::up:
+                    bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->y, Hero->x + Hero->GetWidth() / 2, 50.0f);
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2,
+                        Hero->y, 8.0f, 15.0f),bul_path,dirs::up });
+                    break;
+
+                case dirs::down:
+                    bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->ey, Hero->x + Hero->GetWidth() / 2, 
+                        scr_height);
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2, 
+                        Hero->y, 7.0f, 16.0f),bul_path,dirs::down });
+                    break;
+
+                case dirs::left:
+                    bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 4, 0, Hero->y + Hero->GetHeight() / 4);
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4, 
+                        8.0f, 15.0f),bul_path,dirs::left });
+                    break;
+
+                case dirs::right:
+                    bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, scr_width, 
+                        Hero->y + Hero->GetHeight() / 4);
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 4,
+                        8.0f, 15.0f), bul_path, dirs::right });
+                    break;
+
+                case dirs::u_l:
+                    bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 4, 0,
+                        (Hero->y + Hero->GetHeight() / 4) - static_cast<float>(tan(45.0 * 3.14 / 180) * Hero->x));
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4,
+                        13.0f, 12.0f),bul_path,dirs::u_l });
+                    break;
+
+                case dirs::u_r:
+                    bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, 0,
+                        (Hero->y + Hero->GetHeight() / 4) + static_cast<float>(tan(45.0 * 3.14 / 180) * (scr_width - Hero->ex)));
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex, Hero->y + Hero->GetHeight() / 4,
+                        13.0f, 12.0f),bul_path,dirs::u_r });
+                    break;
+
+                case dirs::d_l:
+                    bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 3 * 4, 0,
+                        (Hero->y + Hero->GetHeight() * 3 / 4) + static_cast<float>(tan(45.0 * 3.14 / 180) * Hero->x));
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 3 * 4,
+                        15.0f, 17.0f),bul_path,dirs::d_l });
+                    break;
+
+                case dirs::d_r:
+                    bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() * 3 / 4, 0,
+                        (Hero->y + Hero->GetHeight() * 3 / 4) - static_cast<float>(tan(45.0 * 3.14 / 180) * (scr_width - Hero->ex)));
+                    vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 3 * 4,
+                        13.0f, 12.0f),bul_path,dirs::d_r });
+                    break;
+
+                case dirs::stop:
+                    switch (hero_prev_dir)
+                    {
+                    case dirs::up:
+                        bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->y, Hero->x + Hero->GetWidth() / 2, 50.0f);
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2,
+                            Hero->y, 8.0f, 15.0f),bul_path,dirs::up });
+                        break;
+
+                    case dirs::down:
+                        bul_path = space::InitLineData(Hero->x + Hero->GetWidth() / 2, Hero->ey, Hero->x + Hero->GetWidth() / 2,
+                            scr_height);
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x + Hero->GetWidth() / 2,
+                            Hero->y, 7.0f, 16.0f),bul_path,dirs::down });
+                        break;
+
+                    case dirs::left:
+                        bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 4, 0, Hero->y + Hero->GetHeight() / 4);
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4,
+                            8.0f, 15.0f),bul_path,dirs::left });
+                        break;
+
+                    case dirs::right:
+                        bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, scr_width,
+                            Hero->y + Hero->GetHeight() / 4);
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 4,
+                            8.0f, 15.0f), bul_path, dirs::right });
+                        break;
+
+                    case dirs::u_l:
+                        bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 4, 0,
+                            (Hero->y + Hero->GetHeight() / 4) - static_cast<float>(tan(45.0 * 3.14 / 180) * Hero->x));
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 4,
+                            13.0f, 12.0f),bul_path,dirs::u_l });
+                        break;
+
+                    case dirs::u_r:
+                        bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() / 4, 0,
+                            (Hero->y + Hero->GetHeight() / 4) + static_cast<float>(tan(45.0 * 3.14 / 180) * (scr_width - Hero->ex)));
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 4,
+                            13.0f, 12.0f),bul_path,dirs::u_r });
+                        break;
+
+                    case dirs::d_l:
+                        bul_path = space::InitLineData(Hero->x, Hero->y + Hero->GetHeight() / 3 * 4, 0,
+                            (Hero->y + Hero->GetHeight() * 3 / 4) + static_cast<float>(tan(45.0 * 3.14 / 180) * Hero->x));
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->x,Hero->y + Hero->GetHeight() / 3 * 4,
+                            15.0f, 17.0f),bul_path,dirs::d_l });
+                        break;
+
+                    case dirs::d_r:
+                        bul_path = space::InitLineData(Hero->ex, Hero->y + Hero->GetHeight() * 3 / 4, 0,
+                            (Hero->y + Hero->GetHeight() * 3 / 4) - static_cast<float>(tan(45.0 * 3.14 / 180) * (scr_width - Hero->ex)));
+                        vMyBullets.push_back(BULLETS{ space::OBJECT(Hero->ex,Hero->y + Hero->GetHeight() / 3 * 4,
+                            13.0f, 12.0f),bul_path,dirs::d_r });
+                        break;
+                    }
+                    break;
+                }
+
+            }
             break;
 
         default:Hero->dir = dirs::stop;
@@ -871,6 +998,66 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         if (Hero)
             if (Hero->dir != dirs::stop)Hero->Move(speed);
 
+        if (!vMyBullets.empty())
+        {
+            for (std::vector<BULLETS>::iterator bullet = vMyBullets.begin(); bullet < vMyBullets.end(); bullet++)
+            {
+                switch (bullet->dir)
+                {
+                case dirs::up:
+                    bullet->Dims.y -= 5.0f + speed;
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::down:
+                    bullet->Dims.y += 5.0f + speed;
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::left:
+                    bullet->Dims.x -= 5.0f + speed;
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::right:
+                    bullet->Dims.x += 5.0f + speed;
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::u_l:
+                    bullet->Dims.x -= 5.0f + speed;
+                    bullet->Dims.y = space::NextLineY(bullet->Dims.x, bullet->path);
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::u_r:
+                    bullet->Dims.x += 5.0f + speed;
+                    bullet->Dims.y = space::NextLineY(bullet->Dims.x, bullet->path);
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::d_l:
+                    bullet->Dims.x -= 5.0f + speed;
+                    bullet->Dims.y = space::NextLineY(bullet->Dims.x, bullet->path);
+                    bullet->Dims.SetEdges();
+                    break;
+
+                case dirs::d_r:
+                    bullet->Dims.x += 5.0f + speed;
+                    bullet->Dims.y = space::NextLineY(bullet->Dims.x, bullet->path);
+                    bullet->Dims.SetEdges();
+                    break;
+                }
+
+                if (bullet->Dims.x >= scr_width || bullet->Dims.ex <= 0 
+                    || bullet->Dims.y >= scr_height || bullet->Dims.ey <= 50.0f)
+                {
+                    vMyBullets.erase(bullet);
+                    break;
+                }
+            }
+        }
+        
         //ENEMIES ENGINE ********************************
 
         if (rand() % (200 - 10 * (int)(speed)) == 0)
@@ -1117,6 +1304,46 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
+        if (!vMyBullets.empty())
+        {
+            for (std::vector<BULLETS>::iterator bullet = vMyBullets.begin(); bullet < vMyBullets.end(); bullet++)
+            {
+                switch (bullet->dir)
+                {
+                case dirs::up:
+                    Draw->DrawBitmap(bmpHeroBulU, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::down:
+                    Draw->DrawBitmap(bmpHeroBulD, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::left:
+                    Draw->DrawBitmap(bmpHeroBulL, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::right:
+                    Draw->DrawBitmap(bmpHeroBulR, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::u_l:
+                    Draw->DrawBitmap(bmpHeroBulUL, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::u_r:
+                    Draw->DrawBitmap(bmpHeroBulUL, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::d_l:
+                    Draw->DrawBitmap(bmpHeroBulDL, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+
+                case dirs::d_r:
+                    Draw->DrawBitmap(bmpHeroBulDR, D2D1::RectF(bullet->Dims.x, bullet->Dims.y, bullet->Dims.ex, bullet->Dims.ey));
+                    break;
+                }
+            }
+        }
 
         //ENEMIES ***************************
 
