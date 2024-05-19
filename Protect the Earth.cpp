@@ -314,7 +314,7 @@ void GameOver()
     {
         if (sound)mciSendString(L"play .\\res\\snd\\tada.wav", NULL, NULL, NULL);
         int repeat = 4;
-        score += 100 * speed;
+        score += (int)(100 * speed);
         
         while (repeat >= 0)
         {
@@ -360,8 +360,8 @@ void GameOver()
 
     Draw->BeginDraw();
     Draw->Clear(D2D1::ColorF(D2D1::ColorF::Black));
-    Draw->DrawTextW(fin_txt, fin_txt_size, bigTxt, D2D1::RectF(scr_width / 2 - 100.0f, scr_height / 2, scr_width, scr_height), 
-        txtBrush);
+    Draw->DrawTextW(fin_txt, fin_txt_size, bigTxt, D2D1::RectF(scr_width / 2 - 150.0f, scr_height / 2 - 50.0f, 
+        scr_width, scr_height), txtBrush);
     Draw->EndDraw();
     Sleep(6500);
 
@@ -1845,7 +1845,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 if (expl->frame >= 23)
                 {
                     vExplosions.erase(expl);
-                    if (!Hero)GameOver();
+                    if (!Hero)
+                    {
+                        Draw->EndDraw();
+                        GameOver();
+                    }
                     break;
                 }
             }
