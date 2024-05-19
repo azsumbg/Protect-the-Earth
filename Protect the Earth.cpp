@@ -141,6 +141,7 @@ ID2D1Bitmap* bmpEvil3 = nullptr;
 
 ID2D1Bitmap* bmpEvilBul = nullptr;
 ID2D1Bitmap* bmpExplosion[23] = { nullptr };
+ID2D1Bitmap* bmpRobots[60] = { nullptr };
 
 //////////////////////////////////////////
 
@@ -165,6 +166,7 @@ std::vector<BULLETS>vEnemyBullets;
 
 std::vector<space::OBJECT> vStars;
 std::vector<EXPLOSION>vExplosions;
+std::vector<EXPLOSION>vRobots;
 
 space::LINEDATA OneLine;
 space::AIDATA AI_Input;
@@ -230,6 +232,7 @@ void ClearResources()
     Swipe(&bmpEvil3);
     Swipe(&bmpEvilBul);
     for (int i = 0; i < 23; i++)Swipe(&bmpExplosion[i]);
+    for (int i = 0; i < 60; i++)Swipe(&bmpRobots[i]);
 }
 void ErrExit(int what)
 {
@@ -258,6 +261,8 @@ void InitGame()
     vEnemyBullets.clear();
     vStars.clear();
     vExplosions.clear();
+    vRobots.clear();
+    
     //////////////////////////////////////////////////////
 
     Hero = space::iCreatePerson(types::hero, 50.0f, scr_height - 150.0f);
@@ -935,6 +940,23 @@ void CreateResources()
             ErrExit(eD2D);
         }
     }
+    for (int i = 0; i < 60; i++)
+    {
+        wchar_t name[100] = L".\\res\\img\\robot\\";
+        wchar_t add[5] = L"\0";
+
+        wsprintf(add, L"%d", i);
+        wcscat_s(name, add);
+        wcscat_s(name, L".png");
+
+        bmpRobots[i] = Load(name, Draw);
+
+        if (!bmpRobots[i])
+        {
+            LogError(L"Error loading bmpRobots");
+            ErrExit(eD2D);
+        }
+    }
     
     ////////////////////////////////////////////////////////////
 
@@ -1125,6 +1147,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         if ((*ship)->lifes <= 0)
                         {
                             vExplosions.push_back(EXPLOSION{ space::OBJECT((*ship)->x - 20.0f,(*ship)->y - 20.0f,100.0,114.0f) });
+                            if (rand() % 10 == 3)
+                                vRobots.push_back(EXPLOSION{ space::OBJECT((*ship)->x,(*ship)->y, 50.0,55.0f) });
                             score += (int)(10 * speed);
                             (*ship)->Release();
                             vEvils.erase(ship);
@@ -1136,10 +1160,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 if (killed)break;
             }
         }
+
+        if (Hero && !vRobots.empty())
+        {
+            for (std::vector<EXPLOSION>::iterator rob = vRobots.begin(); rob < vRobots.end(); rob++)
+            {
+                if (!(Hero->x > rob->Dims.ex || Hero->ex<rob->Dims.x || Hero->y>rob->Dims.ey || Hero->ey < rob->Dims.y))
+                {
+                    vRobots.erase(rob);
+                    if (Hero->lifes + 20 < 150)Hero->lifes += 20;
+                    else Hero->lifes = 150;
+                    break;
+                }
+            }
+        }
         
         //ENEMIES ENGINE ********************************
 
-        if (rand() % (200 - 10 * (int)(speed)) == 0)
+        if (rand() % (220 - 10 * (int)(speed)) == 66)
         {
             int edir = rand() % 8;
             int etype = rand() % 3 + 2;
@@ -1363,6 +1401,39 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     }
                     vEnemyBullets.erase(bullet);
                     break;
+                }
+            }
+        }
+
+        if (!vEvils.empty() && !vRobots.empty())
+        {
+            for (std::vector<space::Person>::iterator ship = vEvils.begin(); ship < vEvils.end(); ship++)
+            {
+                for (std::vector<EXPLOSION>::iterator robot = vRobots.begin(); robot < vRobots.end(); robot++)
+                {
+                    if (!((*ship)->x > robot->Dims.ex || (*ship)->ex < robot->Dims.x
+                        || (*ship)->y>robot->Dims.ey || (*ship)->ey < robot->Dims.y))
+                    {
+                        switch ((*ship)->type)
+                        {
+                        case types::evil1:
+                            if ((*ship)->lifes + 20 < 100)(*ship)->lifes += 20;
+                            else (*ship)->lifes = 100;
+                            break;
+
+                        case types::evil2:
+                            if ((*ship)->lifes + 20 < 150)(*ship)->lifes += 20;
+                            else (*ship)->lifes = 150;
+                            break;
+
+                        case types::evil3:
+                            if ((*ship)->lifes + 20 < 120)(*ship)->lifes += 20;
+                            else (*ship)->lifes = 120;
+                            break;
+                        }
+                        vRobots.erase(robot);
+                        break;
+                    }
                 }
             }
         }
@@ -1622,7 +1693,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 Draw->DrawBitmap(bmpEvilBul, D2D1::RectF(vEnemyBullets[i].Dims.x, vEnemyBullets[i].Dims.y,
                     vEnemyBullets[i].Dims.ex, vEnemyBullets[i].Dims.ey));
         
-        //EXPLOSIONS ************************
+        //EXPLOSIONS & ROBOTS ************************
 
         if (!vExplosions.empty())
         {
@@ -1636,6 +1707,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     if (!Hero)GameOver();
                     break;
                 }
+            }
+        }
+        if (!vRobots.empty())
+        {
+            for (std::vector<EXPLOSION>::iterator expl = vRobots.begin(); expl < vRobots.end(); expl++)
+            {
+                Draw->DrawBitmap(bmpRobots[expl->frame], D2D1::RectF(expl->Dims.x, expl->Dims.y, expl->Dims.ex, expl->Dims.ey));
+                expl->frame++;
+                if (expl->frame >= 60)expl->frame = 0;
             }
         }
 
