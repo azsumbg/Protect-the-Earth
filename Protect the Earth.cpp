@@ -142,6 +142,7 @@ ID2D1Bitmap* bmpEvil3 = nullptr;
 ID2D1Bitmap* bmpEvilBul = nullptr;
 ID2D1Bitmap* bmpExplosion[23] = { nullptr };
 ID2D1Bitmap* bmpRobots[60] = { nullptr };
+ID2D1Bitmap* bmpFireworks[60] = { nullptr };
 
 //////////////////////////////////////////
 
@@ -171,6 +172,8 @@ std::vector<EXPLOSION>vRobots;
 space::LINEDATA OneLine;
 space::AIDATA AI_Input;
 space::AIOUTPUT AI_Output;
+
+int firework_frame = 0;
 
 //////////////////////////////////////////////
 
@@ -233,6 +236,7 @@ void ClearResources()
     Swipe(&bmpEvilBul);
     for (int i = 0; i < 23; i++)Swipe(&bmpExplosion[i]);
     for (int i = 0; i < 60; i++)Swipe(&bmpRobots[i]);
+    for (int i = 0; i < 60; i++)Swipe(&bmpFireworks[i]);
 }
 void ErrExit(int what)
 {
@@ -251,6 +255,7 @@ void InitGame()
     secs = 300;
     wcscpy_s(current_player, L"A PILOT");
     set_name = false;
+    win_game = false;
 
     Swipe(&Hero);
 
@@ -269,11 +274,96 @@ void InitGame()
     if (Hero)Hero->dir = dirs::right;
 
 }
+BOOL CheckRecord()
+{
+    if (score < 1)return no_record;
+    int result = 0;
 
+    CheckFile(rec_file, &result);
+
+    if (result == FILE_NOT_EXIST)
+    {
+        std::wofstream rec(rec_file);
+        rec << score << std::endl;
+        for (int i = 0; i < 16; i++)rec << static_cast<int>(current_player[i]) << std::endl;
+        rec.close();
+        return first_record;
+    }
+    else
+    {
+        std::wifstream check(rec_file);
+        check >> result;
+        check.close();
+        if (score > result)
+        {
+            std::wofstream rec(rec_file);
+            rec << score << std::endl;
+            for (int i = 0; i < 16; i++)rec << static_cast<int>(current_player[i]) << std::endl;
+            rec.close();
+            return record;
+        }
+    }
+
+    return no_record;
+}
 void GameOver()
 {
     KillTimer(bHwnd, bTimer);
     PlaySound(NULL, NULL, NULL);
+    if (win_game)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\tada.wav", NULL, NULL, NULL);
+        int repeat = 4;
+        score += 100 * speed;
+        
+        while (repeat >= 0)
+        {
+            Draw->BeginDraw();
+            Draw->DrawBitmap(bmpFireworks[firework_frame], D2D1::RectF(0, 0, scr_width, scr_height));
+            Draw->DrawTextW(L"СПАСИ СВЕТА !", 14, bigTxt, D2D1::RectF(scr_width / 2 - 120.0f, scr_height / 2 - 50.0f, 
+                scr_width, scr_height), txtBrush);
+            Draw->EndDraw();
+            firework_frame++;
+            if (firework_frame > 59)
+            {
+                firework_frame = 0;
+                repeat--;
+            }
+        }
+    }
+
+    wchar_t fin_txt[75] = L"ИЗВЪНЗЕМНИТЕ ПОБЕДИХА !";
+    int fin_txt_size = 0;
+
+    switch (CheckRecord())
+    {
+    case no_record:
+        if (sound)PlaySound(L".\\res\\snd\\loose.wav", NULL, SND_ASYNC);
+        break;
+
+    case first_record:
+        if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_ASYNC);
+        wcscpy_s(fin_txt, L"ПЪРВИ РЕКОРД НА ИГРАТА !");
+        break;
+
+    case record:
+        if (sound)PlaySound(L".\\res\\snd\\record.wav", NULL, SND_ASYNC);
+        wcscpy_s(fin_txt, L"СВЕТОВЕН РЕКОРД НА ИГРАТА !");
+        break;
+    }
+
+    for (int i = 0; i < 75; i++)
+    {
+        if (fin_txt[i] != '\0')fin_txt_size++;
+        else break;
+    }
+
+    Draw->BeginDraw();
+    Draw->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+    Draw->DrawTextW(fin_txt, fin_txt_size, bigTxt, D2D1::RectF(scr_width / 2 - 100.0f, scr_height / 2, scr_width, scr_height), 
+        txtBrush);
+    Draw->EndDraw();
+    Sleep(6500);
 
     bMsg.message = WM_QUIT;
     bMsg.wParam = 0;
@@ -529,6 +619,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
         case keyS:
             if (Hero)
             {
+                if (sound)mciSendString(L"play .\\res\\snd\\laser.wav", NULL, NULL, NULL);
                 space::LINEDATA bul_path;
 
                 switch (Hero->dir)
@@ -649,11 +740,42 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             }
             break;
 
-            
         default:Hero->dir = dirs::stop;
         }
         break;
 
+        case WM_LBUTTONDOWN:
+            if (HIWORD(lParam) <= 50)
+            {
+                if (LOWORD(lParam) >= Txtb1R.left && LOWORD(lParam) <= Txtb1R.right)
+                {
+                    if (set_name)
+                    {
+                        if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+                        break;
+                    }
+                    if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+                    if (DialogBox(bIns, MAKEINTRESOURCE(IDD_PLAYER), hwnd, &DlgProc) == IDOK)set_name = true;
+                    break;;
+                }
+                if (LOWORD(lParam) >= Txtb2R.left && LOWORD(lParam) <= Txtb2R.right)
+                {
+                    if (sound)
+                    {
+                        PlaySound(NULL, NULL, NULL);
+                        sound = false;
+                        break;
+                    }
+                    else
+                    {
+                        PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
+                        sound = true;
+                        break;
+                    }
+                }
+
+            }
+            break;
 
     default: return DefWindowProc(hwnd, ReceivedMsg, wParam, lParam);
     }
@@ -957,7 +1079,24 @@ void CreateResources()
             ErrExit(eD2D);
         }
     }
-    
+    for (int i = 0; i < 60; i++)
+    {
+        wchar_t name[100] = L".\\res\\img\\fireworks\\";
+        wchar_t add[5] = L"\0";
+
+        wsprintf(add, L"%d", i);
+        wcscat_s(name, add);
+        wcscat_s(name, L".png");
+
+        bmpFireworks[i] = Load(name, Draw);
+
+        if (!bmpFireworks[i])
+        {
+            LogError(L"Error loading bmpFireworks");
+            ErrExit(eD2D);
+        }
+    }
+
     ////////////////////////////////////////////////////////////
 
     D2D1_RECT_F up_txtR = { 0, -150.0f , 800.0f, 50.0f };
@@ -1146,6 +1285,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                         (*ship)->lifes -= 30;
                         if ((*ship)->lifes <= 0)
                         {
+                            if (sound)mciSendString(L"play .\\res\\snd\\explosion.wav", NULL, NULL, NULL);
                             vExplosions.push_back(EXPLOSION{ space::OBJECT((*ship)->x - 20.0f,(*ship)->y - 20.0f,100.0,114.0f) });
                             if (rand() % 10 == 3)
                                 vRobots.push_back(EXPLOSION{ space::OBJECT((*ship)->x,(*ship)->y, 50.0,55.0f) });
@@ -1396,6 +1536,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                     Hero->lifes -= 5;
                     if (Hero->lifes <= 0)
                     {
+                        if (sound)mciSendString(L"play .\\res\\snd\\explosion.wav", NULL, NULL, NULL);
                         vExplosions.push_back(EXPLOSION{ space::OBJECT(Hero->x - 20.0f,Hero->y - 20.0f,100.0f,114.0f) });
                         Swipe(&Hero);
                     }
