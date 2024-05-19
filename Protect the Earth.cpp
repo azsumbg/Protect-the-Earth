@@ -85,10 +85,12 @@ bool b1Hglt = false;
 bool b2Hglt = false;
 bool b3Hglt = false;
 
+bool win_game = false;
+
 float speed = 1;
 int score = 0;
 int mins = 0;
-int secs = 0;
+int secs = 300;
 
 wchar_t current_player[16] = L"A PILOT";
 
@@ -101,6 +103,10 @@ ID2D1RadialGradientBrush* butBckg = nullptr;
 ID2D1SolidColorBrush* txtBrush = nullptr;
 ID2D1SolidColorBrush* hgltBrush = nullptr;
 ID2D1SolidColorBrush* inactBrush = nullptr;
+
+ID2D1SolidColorBrush* shieldOK = nullptr;
+ID2D1SolidColorBrush* shieldHurt = nullptr;
+ID2D1SolidColorBrush* shieldCrit = nullptr;
 
 ID2D1SolidColorBrush* Star1Brush = nullptr;
 ID2D1SolidColorBrush* Star2Brush = nullptr;
@@ -190,6 +196,9 @@ void ClearResources()
     Swipe(&txtBrush);
     Swipe(&hgltBrush);
     Swipe(&inactBrush);
+    Swipe(&shieldOK);
+    Swipe(&shieldHurt);
+    Swipe(&shieldCrit);
     Swipe(&Star1Brush);
     Swipe(&Star2Brush);
     Swipe(&Star3Brush);
@@ -236,7 +245,7 @@ void InitGame()
     speed = 1;
     score = 0;
     mins = 0;
-    secs = 0;
+    secs = 300;
     wcscpy_s(current_player, L"A PILOT");
     set_name = false;
 
@@ -350,7 +359,12 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
 
     case WM_TIMER:
         if (pause)break;
-        secs++;
+        secs--;
+        if (secs < 0)
+        {
+            win_game = true;
+            GameOver();
+        }
         mins = (int)(floor(secs / 60));
         break;
 
@@ -747,6 +761,18 @@ void CreateResources()
         ErrExit(eD2D);
     }
 
+    if (Draw)
+    {
+        hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightGreen), &shieldOK);
+        hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::LightYellow), &shieldHurt);
+        hr = Draw->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Red), &shieldCrit);
+    }
+    if (hr != S_OK)
+    {
+        LogError(L"Error creating D2D1 Shield Brushes");
+        ErrExit(eD2D);
+    }
+
     hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(&iWriteFactory));
     if (hr != S_OK)
     {
@@ -989,7 +1015,6 @@ void CreateResources()
         }
     }
 }
-
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
@@ -1323,8 +1348,26 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
+        if (!vEnemyBullets.empty() && Hero)
+        {
+            for (std::vector<BULLETS>::iterator bullet = vEnemyBullets.begin(); bullet < vEnemyBullets.end(); bullet++)
+            {
+                if (!(bullet->Dims.x > Hero->ex || bullet->Dims.ex<Hero->x 
+                    || bullet->Dims.y>Hero->ey || bullet->Dims.ey < Hero->y))
+                {
+                    Hero->lifes -= 5;
+                    if (Hero->lifes <= 0)
+                    {
+                        vExplosions.push_back(EXPLOSION{ space::OBJECT(Hero->x - 20.0f,Hero->y - 20.0f,100.0f,114.0f) });
+                        Swipe(&Hero);
+                    }
+                    vEnemyBullets.erase(bullet);
+                    break;
+                }
+            }
+        }
 
-        //DRAW THINGS **********************
+        //DRAW THINGS **********************************************************************************
 
         Draw->BeginDraw();
         Draw->Clear(D2D1::ColorF(D2D1::ColorF::Black));
@@ -1366,10 +1409,61 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
 
+        //STATUS BAR ***********************
+
+        if (midTxt && txtBrush)
+        {
+            wchar_t stat[200] = L"КАПИТАН: ";
+            wchar_t add[5] = L"\0";
+            int txt_size = 0;
+
+            wcscat_s(stat, current_player);
+
+            wcscat_s(stat, L", скорост: ");
+            wsprintf(add, L"%d", (int)(speed));
+            wcscat_s(stat, add);
+
+            wcscat_s(stat, L", резултат: ");
+            wsprintf(add, L"%d", score);
+            wcscat_s(stat, add);
+
+            wcscat_s(stat, L", време: ");
+            wsprintf(add, L"%d", mins);
+            wcscat_s(stat, add);
+
+            wcscat_s(stat, L" : ");
+            if (secs - mins * 60 < 10)
+                wcscat_s(stat, L"0");
+            wsprintf(add, L"%d", secs - mins * 60);
+            wcscat_s(stat, add);
+
+            for (int i = 0; i < 200; i++)
+            {
+                if (stat[i] != '\0')txt_size++;
+                else break;
+            }
+
+            Draw->DrawTextW(stat, txt_size, nrmTxt, D2D1::RectF(20.0f, scr_height - 30.0f, scr_width, scr_height),txtBrush);
+
+        }
+
         //HERO ******************************
 
         if (Hero)
         {
+            if (shieldOK && shieldHurt && shieldCrit)
+            {
+                if (Hero->lifes > 80)
+                    Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F(Hero->x + Hero->GetWidth() / 2, Hero->y + Hero->GetHeight() / 2),
+                        Hero->GetWidth() / 2 + 10.0f, Hero->GetHeight() / 2 + 10.0f), shieldOK);
+                else if(Hero->lifes > 40)
+                    Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F(Hero->x + Hero->GetWidth() / 2, Hero->y + Hero->GetHeight() / 2),
+                        Hero->GetWidth() / 2 + 10.0f, Hero->GetHeight() / 2 + 10.0f), shieldHurt);
+                else
+                    Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F(Hero->x + Hero->GetWidth() / 2, Hero->y + Hero->GetHeight() / 2),
+                        Hero->GetWidth() / 2 + 10.0f, Hero->GetHeight() / 2 + 10.0f), shieldCrit);
+            }
+            
             switch (Hero->dir)
             {
             case dirs::down:
@@ -1490,6 +1584,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         {
             for (std::vector<space::Person>::iterator it = vEvils.begin(); it < vEvils.end(); ++it)
             {
+                if (shieldOK && shieldHurt && shieldCrit)
+                {
+                    if ((*it)->lifes > 80)
+                        Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F((*it)->x + (*it)->GetWidth() / 2,
+                            (*it)->y + (*it)->GetHeight() / 2), (*it)->GetWidth() / 2 + 10.0f, (*it)->GetHeight() / 2 + 10.0f),
+                            shieldOK);
+                    else if ((*it)->lifes > 40)
+                        Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F((*it)->x + (*it)->GetWidth() / 2,
+                            (*it)->y + (*it)->GetHeight() / 2), (*it)->GetWidth() / 2 + 10.0f, (*it)->GetHeight() / 2 + 10.0f),
+                            shieldHurt);
+                    else
+                        Draw->FillEllipse(D2D1::Ellipse(D2D1::Point2F((*it)->x + (*it)->GetWidth() / 2,
+                            (*it)->y + (*it)->GetHeight() / 2), (*it)->GetWidth() / 2 + 10.0f, (*it)->GetHeight() / 2 + 10.0f),
+                            shieldCrit);
+                }
+
                 switch ((*it)->type)
                 {
                 case types::evil1:
@@ -1523,12 +1633,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 if (expl->frame >= 23)
                 {
                     vExplosions.erase(expl);
+                    if (!Hero)GameOver();
                     break;
                 }
             }
         }
-
-
 
         ////////////////////////////////////
 
