@@ -270,9 +270,36 @@ void InitGame()
     
     //////////////////////////////////////////////////////
 
+    float next_x = 20.0f;
+    float next_y = 55.0f;
+
+    for (int i = 0; i < 150; i++)
+    {
+        int choice = rand() % 3;
+
+        next_x += 10.0f + (float)(rand() % 40);
+        next_y += 15.0f + (float)(rand() % 60);
+        if (next_x > scr_width - 20.0f) next_x = 20.0f + (float)(rand() % 20);
+        if (next_y > 650.0f) next_y = 55.0f + (float)(rand() % 20);
+
+        switch (choice)
+        {
+        case 0:
+            vStars.push_back(space::OBJECT(next_x, next_y, 1, 1.5));
+            break;
+
+        case 1:
+            vStars.push_back(space::OBJECT(next_x, next_y, 2, 2.5));
+            break;
+
+        case 2:
+            vStars.push_back(space::OBJECT(next_x, next_y, 3, 2.5));
+            break;
+        }
+    }
+
     Hero = space::iCreatePerson(types::hero, 50.0f, scr_height - 150.0f);
     if (Hero)Hero->dir = dirs::right;
-
 }
 BOOL CheckRecord()
 {
@@ -413,6 +440,212 @@ void HallOfFame()
     Draw->EndDraw();
     Sleep(3500);
 }
+void SaveGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+        if (MessageBox(bHwnd, L"Ако продължиш, губиш предишната записана игра !\n\nПрезаписваш ли я ?",
+            L"Презапис !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION) == IDNO)return;
+    }
+
+    std::wofstream save(save_file);
+
+    save << score << std::endl;
+    save << speed << std::endl;
+    save << secs << std::endl;
+    for (int i = 0; i < 16; ++i)save << static_cast<int>(current_player[i]) << std::endl;
+    save << set_name << std::endl;
+    save << win_game << std::endl;
+
+    if (!Hero)save << 0 << std::endl;
+    else
+    {
+        save << Hero->x << std::endl;
+        save << Hero->y << std::endl;
+        save << Hero->lifes << std::endl;
+    }
+
+    save << vExplosions.size() << std::endl;
+    if (!vExplosions.empty())
+    {
+        for (int i = 0; i < vExplosions.size(); i++)
+        {
+            save << vExplosions[i].Dims.x << std::endl;
+            save << vExplosions[i].Dims.y << std::endl;
+            save << vExplosions[i].frame << std::endl;
+        }
+    }
+
+    save << vRobots.size() << std::endl;
+    if (!vRobots.empty())
+    {
+        for (int i = 0; i < vRobots.size(); i++)
+        {
+            save << vRobots[i].Dims.x << std::endl;
+            save << vRobots[i].Dims.y << std::endl;
+            save << vRobots[i].frame << std::endl;
+        }
+    }
+
+    save << vEvils.size() << std::endl;
+    if (!vEvils.empty())
+    {
+        for (int i = 0; i < vEvils.size(); i++)
+        {
+            save << static_cast<int>(vEvils[i]->type) << std::endl;
+            save << vEvils[i]->x << std::endl;
+            save << vEvils[i]->y << std::endl;
+            save << vEvils[i]->lifes << std::endl;
+        }
+    }
+
+    save.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
+    MessageBox(bHwnd, L"Играта е запазена !", L"Запис !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+void LoadGame()
+{
+    int result = 0;
+    CheckFile(save_file, &result);
+    if (result == FILE_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+        if (MessageBox(bHwnd, L"Ако продължиш, губиш тази игра !\n\nПрезаписваш ли я ?",
+            L"Презапис !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION) == IDNO)return;
+    }
+    else
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"Все още няма записана игра !\n\nПостарай се повече !",
+            L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONEXCLAMATION);
+        return;
+    }
+
+    //////////////////////////////////////////////
+    Swipe(&Hero);
+
+    if (!vEvils.empty())
+        for (int i = 0; i < vEvils.size(); i++)Swipe(&vEvils[i]);
+    vEvils.clear();
+    vMyBullets.clear();
+    vEnemyBullets.clear();
+    vStars.clear();
+    vExplosions.clear();
+    vRobots.clear();
+
+    float next_x = 20.0f;
+    float next_y = 55.0f;
+
+    for (int i = 0; i < 150; i++)
+    {
+        int choice = rand() % 3;
+
+        next_x += 10.0f + (float)(rand() % 40);
+        next_y += 15.0f + (float)(rand() % 60);
+        if (next_x > scr_width - 20.0f) next_x = 20.0f + (float)(rand() % 20);
+        if (next_y > 650.0f) next_y = 55.0f + (float)(rand() % 20);
+
+        switch (choice)
+        {
+        case 0:
+            vStars.push_back(space::OBJECT(next_x, next_y, 1, 1.5));
+            break;
+
+        case 1:
+            vStars.push_back(space::OBJECT(next_x, next_y, 2, 2.5));
+            break;
+
+        case 2:
+            vStars.push_back(space::OBJECT(next_x, next_y, 3, 2.5));
+            break;
+        }
+    }
+    //////////////////////////////////////////////
+    
+    float temp_x = 0;
+    float temp_y = 0;
+   
+    std::wifstream save(save_file);
+
+    save >> score;
+    save >> speed;
+    save >> secs;
+    for (int i = 0; i < 16; ++i)
+    {
+        int letter = 0;
+        save >> letter;
+        current_player[i] = static_cast<wchar_t>(letter);
+    }
+    save >> set_name;
+    save >> win_game;
+
+    save >> temp_x;
+
+    if (temp_x > 0)
+    {
+        save >> temp_y;
+        save >> result;
+        Hero = space::iCreatePerson(types::hero, temp_x, temp_y);
+        Hero->lifes = result;
+    }
+    else GameOver();
+
+    save >> result;
+    if (result > 0)
+    {
+        for (int i = 0; i < result; i++)
+        {
+            int aframe = 0;
+
+            save >> temp_x;
+            save >> temp_y; 
+            save >> aframe;
+            vExplosions.push_back(EXPLOSION{ space::OBJECT(temp_x,temp_y,100.0f,114.0f),aframe });
+        }
+    }
+
+    save >> result;
+    if (result > 0)
+    {
+        for (int i = 0; i < result; i++)
+        {
+            int aframe = 0;
+
+            save >> temp_x;
+            save >> temp_y;
+            save >> aframe;
+            vRobots.push_back(EXPLOSION{ space::OBJECT(temp_x,temp_y,50.0f,55.0f),aframe });
+        }
+    }
+
+    save >> result;
+    if (result > 0)
+    {
+        for (int i = 0; i < result; i++)
+        {
+            int atype = -1;
+            int alifes = 0;
+
+            save >> atype;
+            save >> temp_x;
+            save >> temp_y;
+            save >> alifes;
+        
+            vEvils.push_back(space::iCreatePerson(static_cast<types>(atype), temp_x, temp_y));
+            vEvils.back()->lifes = alifes;
+        }
+    }
+
+    save.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
+    MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+
 
 INT_PTR CALLBACK DlgProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -601,7 +834,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             pause = true;
             if (sound)MessageBeep(MB_ICONEXCLAMATION);
             if (MessageBox(hwnd, L"Ако рестартираш, ще загубиш тази игра !\n\nНаистина ли рестартираш ?",
-                L"Рестарт !", 0x00000004L | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)
+                L"Рестарт !", MB_YESNO | MB_APPLMODAL | MB_ICONQUESTION) == IDNO)
             {
                 pause = false;
                 break;
@@ -621,7 +854,17 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
             SendMessage(hwnd, WM_CLOSE, NULL, NULL);
             break;
 
+        case mSave:
+            pause = true;
+            SaveGame();
+            pause = false;
+            break;
 
+        case mLoad:
+            pause = true;
+            LoadGame();
+            pause = false;
+            break;
 
         case mHoF:
             pause = true;
