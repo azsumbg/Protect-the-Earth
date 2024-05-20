@@ -387,7 +387,7 @@ void GameOver()
 
     Draw->BeginDraw();
     Draw->Clear(D2D1::ColorF(D2D1::ColorF::Black));
-    Draw->DrawTextW(fin_txt, fin_txt_size, bigTxt, D2D1::RectF(scr_width / 2 - 150.0f, scr_height / 2 - 50.0f, 
+    Draw->DrawTextW(fin_txt, fin_txt_size, bigTxt, D2D1::RectF(50.0f, scr_height / 2 - 50.0f, 
         scr_width, scr_height), txtBrush);
     Draw->EndDraw();
     Sleep(6500);
@@ -644,6 +644,54 @@ void LoadGame()
 
     if (sound)mciSendString(L"play .\\res\\snd\\save.wav", NULL, NULL, NULL);
     MessageBox(bHwnd, L"Играта е заредена !", L"Зареждане !", MB_OK | MB_APPLMODAL | MB_ICONINFORMATION);
+}
+void ShowHelp()
+{
+    int result = 0;
+    CheckFile(help_file, &result);
+    if (result == FILE_NOT_EXIST)
+    {
+        if (sound)mciSendString(L"play .\\res\\snd\\negative.wav", NULL, NULL, NULL);
+        MessageBox(bHwnd, L"Не налична помощ за играта !\n\nСвържете се с разработчика !",
+            L"Липсва файл !", MB_OK | MB_APPLMODAL | MB_ICONERROR);
+        return;
+    }
+
+    wchar_t hlp[1000] = L"\0";
+    std::wifstream load_hlp(help_file);
+
+    load_hlp >> result;
+    for (int i = 1; i < result; i++)
+    {
+        int letter = 0;
+        load_hlp >> letter;
+        hlp[i] = static_cast<wchar_t>(letter);
+    }
+    load_hlp.close();
+
+    if (sound)mciSendString(L"play .\\res\\snd\\help.wav", NULL, NULL, NULL);
+
+    if (midTxt && txtBrush)
+    {
+        Draw->BeginDraw();
+        Draw->Clear(D2D1::ColorF(D2D1::ColorF::Black));
+        if (butBckg) Draw->FillRectangle(D2D1::RectF(0, 0, scr_width, 50.0f), butBckg);
+        if (nrmTxt && txtBrush && inactBrush && hgltBrush)
+        {
+            if (set_name) Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmTxt, Txtb1R, inactBrush);
+            else
+            {
+                if (b1Hglt) Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmTxt, Txtb1R, hgltBrush);
+                else Draw->DrawTextW(L"ИМЕ НА ПИЛОТ", 13, nrmTxt, Txtb1R, txtBrush);
+            }
+            if (b2Hglt) Draw->DrawTextW(L"ЗВУЦИ ON / OFF", 15, nrmTxt, Txtb2R, hgltBrush);
+            else Draw->DrawTextW(L"ЗВУЦИ ON / OFF", 15, nrmTxt, Txtb2R, txtBrush);
+            if (b3Hglt) Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmTxt, Txtb3R, hgltBrush);
+            else Draw->DrawTextW(L"ПОМОЩ ЗА ИГРАТА", 16, nrmTxt, Txtb3R, txtBrush);
+        }
+        Draw->DrawTextW(hlp, result, midTxt, D2D1::RectF(20.0f, 100.0f, scr_width, scr_height), txtBrush);
+        Draw->EndDraw();
+    }
 }
 
 
@@ -1055,6 +1103,7 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                 }
                 if (LOWORD(lParam) >= Txtb2R.left && LOWORD(lParam) <= Txtb2R.right)
                 {
+                    mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
                     if (sound)
                     {
                         PlaySound(NULL, NULL, NULL);
@@ -1068,7 +1117,23 @@ LRESULT CALLBACK WinProc(HWND hwnd, UINT ReceivedMsg, WPARAM wParam, LPARAM lPar
                         break;
                     }
                 }
-
+                if (LOWORD(lParam) >= Txtb3R.left && LOWORD(lParam) <= Txtb3R.right)
+                {
+                    if (sound)mciSendString(L"play .\\res\\snd\\select.wav", NULL, NULL, NULL);
+                    if (!show_help)
+                    {
+                        pause = true;
+                        show_help = true;
+                        ShowHelp();
+                        break;
+                    }
+                    else
+                    {
+                        pause = false;
+                        show_help = false;
+                        break;
+                    }
+                }
             }
             break;
 
@@ -1477,6 +1542,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     bIns = hInstance;
     if (!bIns)ErrExit(eClass);
     CreateResources();
+    PlaySound(sound_file, NULL, SND_ASYNC | SND_LOOP);
     ////////////////////////////////////////
 
     while (bMsg.message != WM_QUIT)
@@ -1603,6 +1669,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
                 if (!(Hero->x > rob->Dims.ex || Hero->ex<rob->Dims.x || Hero->y>rob->Dims.ey || Hero->ey < rob->Dims.y))
                 {
                     vRobots.erase(rob);
+                    if (sound)mciSendString(L"play .\\res\\snd\\repair.wav", NULL, NULL, NULL);
                     if (Hero->lifes + 20 < 150)Hero->lifes += 20;
                     else Hero->lifes = 150;
                     break;
